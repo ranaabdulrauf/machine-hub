@@ -1,0 +1,18 @@
+<?php
+
+namespace App\MachineHub\Core;
+
+use App\MachineHub\Suppliers\WMFAdapter;
+use App\MachineHub\Suppliers\Schaerer\SchaererAdapter;
+
+class SupplierRegistry
+{
+    public static function resolve(string $supplier)
+    {
+        return match (strtolower($supplier)) {
+            'schaerer' => new SchaererAdapter(),
+            'wmf'      => new WMFAdapter(),
+            default    => throw new \InvalidArgumentException("Unknown supplier: $supplier"),
+        };
+    }
+}
