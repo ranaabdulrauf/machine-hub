@@ -1,10 +1,11 @@
 <?php
 
-namespace App\MachineHub\Suppliers\Schaerer;
+namespace App\MachineHub\Suppliers;
 
-use App\MachineHub\Core\AbstractSupplierAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use App\MachineHub\Suppliers\AbstractSupplierAdapter;
 
 class SchaererAdapter extends AbstractSupplierAdapter
 {
@@ -32,28 +33,39 @@ class SchaererAdapter extends AbstractSupplierAdapter
         return true;
     }
 
-    protected function handleDispensing(array $event): array
+    protected function handleDispensing(array $event): ?array
     {
-        $data = $event['data'] ?? [];
-
-        return [
-            'type'       => 'Dispensing',
-            'eventId'    => $event['id'] ?? null,
-            'deviceId'   => $data['DeviceId'] ?? null,
-            'occurredAt' => $data['TelemetryInformation']['Timestamp'] ?? null,
-            'payload'    => $data,
-        ];
+        Log::info('[Schaerer] Dispensing', $event);
+        return $event;
     }
-
-    protected function handleMachineEvent(array $event): array
+    protected function handleMachineEvent(array $event): ?array
     {
-        $data = $event['data'] ?? [];
-
-        return [
-            'type'    => 'MachineEvent',
-            'eventId' => $event['id'] ?? null,
-            'deviceId' => $data['DeviceId'] ?? null,
-            'payload' => $data,
-        ];
+        Log::info('[Schaerer] MachineEvent', $event);
+        return $event;
+    }
+    protected function handleDiagnostics(array $event): ?array
+    {
+        Log::info('[Schaerer] Diagnostics', $event);
+        return $event;
+    }
+    protected function handleModemMessage(array $event): ?array
+    {
+        Log::info('[Schaerer] ModemMessage', $event);
+        return $event;
+    }
+    protected function handleStatistics(array $event): ?array
+    {
+        Log::info('[Schaerer] Statistics', $event);
+        return $event;
+    }
+    protected function handleMachineTwin(array $event): ?array
+    {
+        Log::info('[Schaerer] MachineTwin', $event);
+        return $event;
+    }
+    protected function handleMachineModemTwin(array $event): ?array
+    {
+        Log::info('[Schaerer] MachineModemTwin', $event);
+        return $event;
     }
 }

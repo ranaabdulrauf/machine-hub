@@ -3,7 +3,7 @@
 namespace App\MachineHub\Core;
 
 use App\MachineHub\Suppliers\WMFAdapter;
-use App\MachineHub\Suppliers\Schaerer\SchaererAdapter;
+use App\MachineHub\Suppliers\SchaererAdapter;
 
 class SupplierRegistry
 {

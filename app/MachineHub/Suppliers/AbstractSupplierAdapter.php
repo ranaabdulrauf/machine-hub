@@ -1,6 +1,6 @@
 <?php
 
-namespace App\MachineHub\Core;
+namespace App\MachineHub\Suppliers;
 
 use App\MachineHub\Core\Contracts\SupplierAdapter;
 use Illuminate\Http\Request;

@@ -5,14 +5,13 @@ namespace App\MachineHub\Suppliers;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use App\MachineHub\Core\AbstractSupplierAdapter;
-use App\MachineHub\Core\Contracts\SupplierAdapter;
+use App\MachineHub\Suppliers\AbstractSupplierAdapter;
 
 class WMFAdapter extends AbstractSupplierAdapter
 {
     public function name(): string
     {
-        return 'schaerer';
+        return 'WMF';
     }
 
     public function verify(Request $request): bool|JsonResponse
@@ -34,28 +33,39 @@ class WMFAdapter extends AbstractSupplierAdapter
         return true;
     }
 
-    protected function handleDispensing(array $event): array
+    protected function handleDispensing(array $event): ?array
     {
-        $data = $event['data'] ?? [];
-
-        return [
-            'type'       => 'Dispensing',
-            'eventId'    => $event['id'] ?? null,
-            'deviceId'   => $data['DeviceId'] ?? null,
-            'occurredAt' => $data['TelemetryInformation']['Timestamp'] ?? null,
-            'payload'    => $data,
-        ];
+        Log::info('[WMF] Dispensing', $event);
+        return $event;
     }
-
-    protected function handleMachineEvent(array $event): array
+    protected function handleMachineEvent(array $event): ?array
     {
-        $data = $event['data'] ?? [];
-
-        return [
-            'type'    => 'MachineEvent',
-            'eventId' => $event['id'] ?? null,
-            'deviceId' => $data['DeviceId'] ?? null,
-            'payload' => $data,
-        ];
+        Log::info('[WMF] MachineEvent', $event);
+        return $event;
+    }
+    protected function handleDiagnostics(array $event): ?array
+    {
+        Log::info('[WMF] Diagnostics', $event);
+        return $event;
+    }
+    protected function handleModemMessage(array $event): ?array
+    {
+        Log::info('[WMF] ModemMessage', $event);
+        return $event;
+    }
+    protected function handleStatistics(array $event): ?array
+    {
+        Log::info('[WMF] Statistics', $event);
+        return $event;
+    }
+    protected function handleMachineTwin(array $event): ?array
+    {
+        Log::info('[WMF] MachineTwin', $event);
+        return $event;
+    }
+    protected function handleMachineModemTwin(array $event): ?array
+    {
+        Log::info('[WMF] MachineModemTwin', $event);
+        return $event;
     }
 }
