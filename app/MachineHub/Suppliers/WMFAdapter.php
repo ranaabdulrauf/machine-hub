@@ -57,7 +57,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] DispensingEvent: ", $event);
+        Log::info("[{$this->name()}] DispensingEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'Dispensing',
@@ -72,7 +72,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] MachineEvent: ", $event);
+        Log::info("[{$this->name()}] MachineEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'MachineEvent',
@@ -87,7 +87,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] DiagnosticsEvent:", $event);
+        Log::info("[{$this->name()}] DiagnosticsEvent:", $event);
 
         return new TelemetryDTO(
             type: 'Diagnostics',
@@ -102,7 +102,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] ModemEvent: ", $event);
+        Log::info("[{$this->name()}] ModemEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'ModemMessage',
@@ -117,7 +117,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] StatisticsEvent: ", $event);
+        Log::info("[{$this->name()}] StatisticsEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'Statistics',
@@ -132,7 +132,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] MachineTwinEvent: ", $event);
+        Log::info("[{$this->name()}] MachineTwinEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'MachineTwin',
@@ -147,7 +147,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] MachineModemEvent: ", $event);
+        Log::info("[{$this->name()}] MachineModemEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'MachineModemTwin',
