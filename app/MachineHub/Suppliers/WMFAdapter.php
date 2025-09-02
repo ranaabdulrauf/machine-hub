@@ -34,11 +34,30 @@ class WMFAdapter extends AbstractSupplierAdapter
         return true;
     }
 
+
+    public function handleEvent(array $event): ?TelemetryDTO
+    {
+        $type = $event['eventType'] ?? $event['event'] ?? null;
+
+        if (!$type) {
+            Log::warning("[{$this->name()}] Missing event type", ['event' => $event]);
+            return null;
+        }
+
+        $method = 'handle' . str_replace(' ', '', ucwords(strtolower($type)));
+
+        if (method_exists($this, $method)) {
+            return $this->{$method}($event);
+        }
+
+        return $this->handleUnknownEvent($event);
+    }
+
     protected function handleDispensing(array $event): ?TelemetryDTO
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] Dispensing raw", $event);
+        Log::info("[WMF] DispensingEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'Dispensing',
@@ -53,7 +72,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] MachineEvent raw", $event);
+        Log::info("[WMF] MachineEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'MachineEvent',
@@ -68,7 +87,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] Diagnostics raw", $event);
+        Log::info("[WMF] DiagnosticsEvent:", $event);
 
         return new TelemetryDTO(
             type: 'Diagnostics',
@@ -83,7 +102,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] Diagnostics raw", $event);
+        Log::info("[WMF] ModemEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'ModemMessage',
@@ -98,7 +117,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] Diagnostics raw", $event);
+        Log::info("[WMF] StatisticsEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'Statistics',
@@ -113,7 +132,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] Diagnostics raw", $event);
+        Log::info("[WMF] MachineTwinEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'MachineTwin',
@@ -128,7 +147,7 @@ class WMFAdapter extends AbstractSupplierAdapter
     {
         $data = $event['data'] ?? [];
 
-        Log::info("[WMF] Diagnostics raw", $event);
+        Log::info("[WMF] MachineModemEvent: ", $event);
 
         return new TelemetryDTO(
             type: 'MachineModemTwin',
@@ -137,15 +156,5 @@ class WMFAdapter extends AbstractSupplierAdapter
             occurredAt: null, // twin is a snapshot
             payload: $data
         );
-    }
-
-
-    protected function handleUnknownEvent(array $event): ?array
-    {
-        Log::warning("[{$this->name()}] Unknown event type", [
-            'eventType' => $event['eventType'] ?? $event['event'] ?? 'undefined',
-            'event'     => $event,
-        ]);
-        return null;
     }
 }

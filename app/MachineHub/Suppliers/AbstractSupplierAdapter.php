@@ -2,16 +2,24 @@
 
 namespace App\MachineHub\Suppliers;
 
-use App\MachineHub\Core\Contracts\SupplierAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use App\MachineHub\Core\DTO\TelemetryDTO;
+use App\MachineHub\Core\Contracts\SupplierAdapter;
 
 abstract class AbstractSupplierAdapter implements SupplierAdapter
 {
+
+
+    public function name(): string
+    {
+        return 'Abstract';
+    }
+
     /**
-     * Verify request (signature, handshake, etc.)
-     * Default: always true.
+     * Default: allow all requests.
+     * Override if supplier requires signature/IP/handshake checks.
      */
     public function verify(Request $request): bool|JsonResponse
     {
@@ -19,9 +27,10 @@ abstract class AbstractSupplierAdapter implements SupplierAdapter
     }
 
     /**
-     * Event dispatcher.
+     * Default dispatcher: converts "EventType" → "handleEventType".
+     * Suppliers can override if they need custom dispatch logic.
      */
-    public function handleEvent(array $event): ?array
+    public function handleEvent(array $event): ?TelemetryDTO
     {
         $type = $event['eventType'] ?? $event['event'] ?? null;
 
@@ -40,19 +49,11 @@ abstract class AbstractSupplierAdapter implements SupplierAdapter
     }
 
     /**
-     * supplier name.
+     * Default unknown handler.
      */
-    public function name(): string
+    protected function handleUnknownEvent(array $event): ?TelemetryDTO
     {
-        return 'unknown';
-    }
-
-    /**
-     * Default unknown event handler.
-     */
-    protected function handleUnknownEvent(array $event): ?array
-    {
-        Log::warning("[{$this->name()}] Unknown event type", [
+        Log::warning("[{$this->name()}] UnknownEvent: ", [
             'eventType' => $event['eventType'] ?? $event['event'] ?? 'undefined',
             'event'     => $event,
         ]);
