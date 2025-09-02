@@ -16,11 +16,14 @@ class VerifySubscriptionMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        $supplier = strtolower($request->route('supplier'));
+
         $incomingName = $request->header('aeg-subscription-name');
-        $expectedName = config('machinehub.suppliers.schaerer.subscription_name');
+        $expectedName = config("machinehub.suppliers.$supplier.subscription_name");
 
         if (!$expectedName || $incomingName !== $expectedName) {
             Log::warning("[Webhook] Invalid subscription name", [
+                'supplier' => $supplier,
                 'incoming' => $incomingName,
                 'expected' => $expectedName,
                 'ip'       => $request->ip(),

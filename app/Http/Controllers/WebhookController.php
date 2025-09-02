@@ -14,7 +14,7 @@ class WebhookController extends Controller
 
         // Step 1: Verify or handshake
         $verification = $adapter->verify($request);
-        if ($verification instanceof \Illuminate\Http\Response) {
+        if ($verification instanceof \Illuminate\Http\JsonResponse) {
             return $verification; // return handshake response
         }
         if ($verification === false) {

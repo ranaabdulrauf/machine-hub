@@ -10,7 +10,6 @@ class SupplierRegistry
     public static function resolve(string $supplier)
     {
         return match (strtolower($supplier)) {
-            'schaerer' => new SchaererAdapter(),
             'wmf'      => new WMFAdapter(),
             default    => throw new \InvalidArgumentException("Unknown supplier: $supplier"),
         };

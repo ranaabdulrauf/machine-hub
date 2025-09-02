@@ -138,4 +138,14 @@ class WMFAdapter extends AbstractSupplierAdapter
             payload: $data
         );
     }
+
+
+    protected function handleUnknownEvent(array $event): ?array
+    {
+        Log::warning("[{$this->name()}] Unknown event type", [
+            'eventType' => $event['eventType'] ?? $event['event'] ?? 'undefined',
+            'event'     => $event,
+        ]);
+        return null;
+    }
 }

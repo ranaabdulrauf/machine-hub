@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
-            'coffee-machine/webhook',
+            'coffee-machine/*/webhook',
         ]);
         $middleware->alias([
             'verify.subscription' => VerifySubscriptionMiddleware::class
