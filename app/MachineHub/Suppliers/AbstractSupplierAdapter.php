@@ -12,9 +12,9 @@ abstract class AbstractSupplierAdapter
 {
     protected array $config;
 
-    public function __construct(array $config = [])
+    public function __construct()
     {
-        $this->config = $config;
+        $this->config = config("machinehub.suppliers.{$this->name()}");
     }
 
     abstract public function name(): string;
@@ -47,4 +47,3 @@ abstract class AbstractSupplierAdapter
         return null;
     }
 }
-

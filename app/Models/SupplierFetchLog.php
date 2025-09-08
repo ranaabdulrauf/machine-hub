@@ -14,7 +14,7 @@ class SupplierFetchLog extends Model
     {
         return optional(
             static::where('supplier', $supplier)
-                ->where('resource', $endpoint)
+                ->where('endpoint', $endpoint)
                 ->first()
         )->last_fetched_at;
     }
@@ -22,7 +22,7 @@ class SupplierFetchLog extends Model
     public static function updateFetched(string $supplier, string $endpoint, Carbon $timestamp): void
     {
         static::updateOrCreate(
-            ['supplier' => $supplier, 'resource' => $endpoint],
+            ['supplier' => $supplier, 'endpoint' => $endpoint],
             ['last_fetched_at' => $timestamp]
         );
     }

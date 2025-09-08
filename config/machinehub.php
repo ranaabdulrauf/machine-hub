@@ -23,4 +23,7 @@ return [
         ],
     ],
 
+    'webhook_url' => env('MACHINEHUB_WEBHOOK_URL'),
+
+
 ];
