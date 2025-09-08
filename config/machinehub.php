@@ -10,11 +10,9 @@ return [
     | Add new suppliers here as needed.
     */
     'suppliers' => [
-        'schaerer' => [
-            'base_url'         => 'https://events.schaerer.com',
-            'rate_limit'       => '60,1',
-            'subscription_name' => env('SCHAERER_SUBSCRIPTION_NAME', 'schaerer-sub'),
-            'allowed_ips'      => ['1.2.3.4'],
+        'dejong' => [
+            'base_url' => env('DEJONG_API_URL', null),
+            'api_key'  => env('DEJONG_API_KEY', null),
         ],
 
         'wmf' => [

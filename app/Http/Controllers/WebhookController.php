@@ -10,7 +10,11 @@ class WebhookController extends Controller
 {
     public function handle(Request $request, string $supplier)
     {
-        $adapter = SupplierRegistry::resolve($supplier);
+        // Resolve the registry from the container
+        $registry = app(SupplierRegistry::class);
+
+        // Get the adapter for this supplier
+        $adapter = $registry->resolve($supplier);
 
         // Step 1: Verify or handshake
         $verification = $adapter->verify($request);
@@ -35,4 +39,3 @@ class WebhookController extends Controller
         return response()->json(['status' => 'processed'], 200);
     }
 }
-

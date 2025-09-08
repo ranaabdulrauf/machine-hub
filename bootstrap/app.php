@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Middleware\VerifySubscriptionMiddleware;
 use Illuminate\Foundation\Application;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\VerifySubscriptionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'verify.subscription' => VerifySubscriptionMiddleware::class
         ]);
+    })
+    ->withSchedule(function (Schedule $schedule) {
+        $schedule->job(new \App\Jobs\FetchDejongData)->everyFiveMinutes();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

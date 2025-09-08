@@ -8,55 +8,43 @@ use Illuminate\Support\Facades\Log;
 use App\MachineHub\Core\DTO\TelemetryDTO;
 use App\MachineHub\Core\Contracts\SupplierAdapter;
 
-abstract class AbstractSupplierAdapter implements SupplierAdapter
+abstract class AbstractSupplierAdapter
 {
+    protected array $config;
 
-
-    public function name(): string
+    public function __construct(array $config = [])
     {
-        return 'Abstract';
+        $this->config = $config;
     }
 
-    /**
-     * Default: allow all requests.
-     * Override if supplier requires signature/IP/handshake checks.
-     */
-    public function verify(Request $request): bool|JsonResponse
-    {
-        return true;
-    }
+    abstract public function name(): string;
+    abstract public function mode(): string; // "webhook" | "api"
+    abstract public function verify(?Request $request): JsonResponse|bool;
 
     /**
-     * Default dispatcher: converts "EventType" → "handleEventType".
-     * Suppliers can override if they need custom dispatch logic.
+     * Handle a single webhook event (for mode=webhook).
      */
     public function handleEvent(array $event): ?TelemetryDTO
     {
-        $type = $event['eventType'] ?? $event['event'] ?? null;
-
-        if (!$type) {
-            Log::warning("[{$this->name()}] Missing event type", ['event' => $event]);
-            return null;
-        }
-
-        $method = 'handle' . str_replace(' ', '', ucwords(strtolower($type)));
-
-        if (method_exists($this, $method)) {
-            return $this->{$method}($event);
-        }
-
         return $this->handleUnknownEvent($event);
     }
 
     /**
-     * Default unknown handler.
+     * Handle API polling (for mode=api).
+     * Default: no-op.
      */
+    public function handleApi(): void
+    {
+        // no-op, override in API suppliers
+    }
+
     protected function handleUnknownEvent(array $event): ?TelemetryDTO
     {
-        Log::warning("[{$this->name()}] UnknownEvent: ", [
+        Log::warning("[{$this->name()}] UnknownEvent", [
             'eventType' => $event['eventType'] ?? $event['event'] ?? 'undefined',
             'event'     => $event,
         ]);
         return null;
     }
 }
+
