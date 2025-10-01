@@ -10,11 +10,12 @@ Route::get('/', function () {
 
 // Webhook routes for suppliers that support webhooks
 Route::group(['prefix' => 'webhook'], function () {
-    // WMF webhook routes
-    Route::post('/wmf/{tenant}', [WMFController::class, 'handle'])
+    // WMF webhook routes with subscription verification
+    Route::match(['POST', 'OPTIONS'], '/wmf/{tenant}', [WMFController::class, 'handle'])
+        ->middleware('verify.subscription')
         ->where('tenant', '[a-zA-Z0-9_-]+');
 
-    // Franke webhook routes
+    // Franke webhook routes (different verification approach)
     Route::post('/franke/{tenant}', [FrankeController::class, 'handle'])
         ->where('tenant', '[a-zA-Z0-9_-]+');
 });

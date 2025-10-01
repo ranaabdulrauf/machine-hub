@@ -21,12 +21,12 @@ return [
             ],
             'tenants' => [
                 'yellowbeared' => [
-                    'webhook_url' => env('DEJONG_YELLOWBEARED_WEBHOOK_URL', null),
-                    'api_key' => env('DEJONG_YELLOWBEARED_API_KEY', null),
+                    'webhook_url' => env('YELLOWBEARED_WEBHOOK_URL', null),
+                    'api_key' => env('YELLOWBEARED_API_KEY', null),
                 ],
                 'yellowrock' => [
-                    'webhook_url' => env('DEJONG_YELLOWROCK_WEBHOOK_URL', null),
-                    'api_key' => env('DEJONG_YELLOWROCK_API_KEY', null),
+                    'webhook_url' => env('YELLOWROCK_WEBHOOK_URL', null),
+                    'api_key' => env('YELLOWROCK_API_KEY', null),
                 ],
             ],
         ],
@@ -35,24 +35,21 @@ return [
             'options' => [
                 'mode' => 'webhook',
                 'rate_limit'       => '30,1',
-                'subscription_name' => 'wmf-sub',
+                'subscription_name' => 'wmf-telemetry-subscription',
                 'allowed_ips'      => [''],
             ],
             'tenants' => [
                 'yellowbeared' => [
-                    'webhook_url' => env('WMF_YELLOWBEARED_WEBHOOK_URL', null),
-                    'api_key' => env('WMF_YELLOWBEARED_API_KEY', null),
-                    'base_url' => 'https://events.wmf.com',
+                    'webhook_url' => env('YELLOWBEARED_WEBHOOK_URL', null),
+                    'api_key' => env('YELLOWBEARED_API_KEY', null),
                 ],
                 'yellowrock' => [
-                    'webhook_url' => env('WMF_YELLOWROCK_WEBHOOK_URL', null),
-                    'api_key' => env('WMF_YELLOWROCK_API_KEY', null),
-                    'base_url' => 'https://events.wmf.com',
+                    'webhook_url' => env('YELLOWROCK_WEBHOOK_URL', null),
+                    'api_key' => env('YELLOWROCK_API_KEY', null),
                 ],
                 'hermelin' => [
-                    'webhook_url' => env('WMF_HERMELIN_WEBHOOK_URL', null),
-                    'api_key' => env('WMF_HERMELIN_API_KEY', null),
-                    'base_url' => 'https://events.wmf.com',
+                    'webhook_url' => env('HERMELIN_WEBHOOK_URL', null),
+                    'api_key' => env('HERMELIN_API_KEY', null),
                 ],
             ],
         ],
@@ -66,14 +63,12 @@ return [
             ],
             'tenants' => [
                 'yellowbeared' => [
-                    'webhook_url' => env('FRANKE_YELLOWBEARED_WEBHOOK_URL', null),
-                    'api_key' => env('FRANKE_YELLOWBEARED_API_KEY', null),
-                    'base_url' => 'https://events.franke.com',
+                    'webhook_url' => env('YELLOWBEARED_WEBHOOK_URL', null),
+                    'api_key' => env('YELLOWBEARED_API_KEY', null),
                 ],
                 'yellowrock' => [
-                    'webhook_url' => env('FRANKE_YELLOWROCK_WEBHOOK_URL', null),
-                    'api_key' => env('FRANKE_YELLOWROCK_API_KEY', null),
-                    'base_url' => 'https://events.franke.com',
+                    'webhook_url' => env('YELLOWROCK_WEBHOOK_URL', null),
+                    'api_key' => env('YELLOWROCK_API_KEY', null),
                 ],
             ],
         ],

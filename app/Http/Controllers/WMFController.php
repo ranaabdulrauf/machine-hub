@@ -27,6 +27,43 @@ class WMFController extends Controller
      */
     public function handle(Request $request, string $tenant): JsonResponse
     {
+        // Handle HTTP OPTIONS for CloudEvents v1.0 abuse protection
+        if ($request->isMethod('OPTIONS')) {
+            return $this->handleOptionsRequest($request, $tenant);
+        }
+
+        return $this->handlePostRequest($request, $tenant);
+    }
+
+    /**
+     * Handle HTTP OPTIONS request for CloudEvents v1.0 abuse protection
+     */
+    protected function handleOptionsRequest(Request $request, string $tenant): JsonResponse
+    {
+        $origin = $request->header('WebHook-Request-Origin');
+
+        Log::info("[WMFController] Handling OPTIONS request for abuse protection", [
+            'tenant' => $tenant,
+            'origin' => $origin
+        ]);
+
+        if (!$origin) {
+            return response()->json(['error' => 'Missing WebHook-Request-Origin header'], 400);
+        }
+
+        // Allow the origin (you can add validation logic here)
+        return response()
+            ->header('WebHook-Allowed-Origin', $origin)
+            ->header('WebHook-Allowed-Rate', '1000') // Allow 1000 requests per minute
+            ->header('Allow', 'POST')
+            ->json(['message' => 'Webhook validation successful']);
+    }
+
+    /**
+     * Handle HTTP POST request for webhook events
+     */
+    protected function handlePostRequest(Request $request, string $tenant): JsonResponse
+    {
         $supplier = 'wmf';
 
         Log::info("[WMFController] Processing webhook", [
@@ -38,13 +75,21 @@ class WMFController extends Controller
         // Verify the webhook if needed
         $verification = $this->adapter->verify($request);
         if ($verification instanceof JsonResponse) {
+            // This handles subscription validation responses
+            Log::info("[WMFController] Returning verification response", [
+                'supplier' => $supplier,
+                'tenant' => $tenant,
+                'response' => $verification->getData()
+            ]);
             return $verification;
         }
 
         if (!$verification) {
             Log::warning("[WMFController] Webhook verification failed", [
                 'supplier' => $supplier,
-                'tenant' => $tenant
+                'tenant' => $tenant,
+                'headers' => $request->headers->all(),
+                'body' => $request->all()
             ]);
 
             return response()->json(['error' => 'Verification failed'], 400);
@@ -72,7 +117,7 @@ class WMFController extends Controller
                 if ($dto) {
                     // Dispatch forwarding job for reliable delivery
                     ForwardTelemetryJob::dispatch($supplier, $tenant, $dto);
-                    
+
                     $processedCount++;
                     Log::info("[WMFController] Event dispatched for forwarding", [
                         'supplier' => $supplier,

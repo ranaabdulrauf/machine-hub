@@ -35,7 +35,7 @@ it('can handle wmf webhook requests', function () {
     // Mock the queue to prevent actual job execution
     Queue::fake();
 
-    // Create test webhook data
+    // Create test webhook data (this is what WMF sends to us)
     $webhookData = [
         [
             'id' => 'wmf-event-123',
@@ -50,7 +50,7 @@ it('can handle wmf webhook requests', function () {
         ]
     ];
 
-    // Make a POST request to WMF webhook endpoint
+    // Make a POST request to our WMF webhook endpoint (incoming)
     $response = $this->postJson('/webhook/wmf/yellowbeared', $webhookData);
 
     // Assert the response is successful
@@ -63,7 +63,7 @@ it('can handle wmf webhook requests', function () {
         'tenant' => 'yellowbeared'
     ]);
 
-    // Assert that forwarding jobs were dispatched
+    // Assert that forwarding jobs were dispatched (these will forward to tenant's Dobby platform)
     Queue::assertPushed(ForwardTelemetryJob::class, function ($job) {
         return $job->supplier === 'wmf' && $job->tenant === 'yellowbeared';
     });
@@ -316,4 +316,120 @@ it('handles webhook forwarding jobs', function () {
 
     // Should complete without errors
     expect(true)->toBeTrue();
+});
+
+it('handles wmf subscription validation', function () {
+    // Create subscription validation event
+    $validationData = [
+        [
+            'id' => 'validation-event-123',
+            'eventType' => 'Microsoft.EventGrid.SubscriptionValidationEvent',
+            'data' => [
+                'validationCode' => 'test-validation-code-123'
+            ]
+        ]
+    ];
+
+    // Make a POST request with validation event
+    $response = $this->postJson('/webhook/wmf/yellowbeared', $validationData);
+
+    // Should return validation response
+    $response->assertStatus(200);
+    $response->assertJson([
+        'validationResponse' => 'test-validation-code-123'
+    ]);
+});
+
+it('handles wmf options request for abuse protection', function () {
+    // Make an OPTIONS request for CloudEvents v1.0 abuse protection
+    $response = $this->options('/webhook/wmf/yellowbeared', [], [
+        'WebHook-Request-Origin' => 'eventemitter.example.com'
+    ]);
+
+    // Should return proper headers for abuse protection
+    $response->assertStatus(200);
+    $response->assertHeader('WebHook-Allowed-Origin', 'eventemitter.example.com');
+    $response->assertHeader('WebHook-Allowed-Rate', '1000');
+    $response->assertHeader('Allow', 'POST');
+});
+
+it('rejects options request without origin header', function () {
+    // Make an OPTIONS request without required header
+    $response = $this->options('/webhook/wmf/yellowbeared');
+
+    // Should return error
+    $response->assertStatus(400);
+    $response->assertJson([
+        'error' => 'Missing WebHook-Request-Origin header'
+    ]);
+});
+
+it('handles azure event grid validation with headers', function () {
+    // Create validation request with Azure Event Grid headers
+    $response = $this->postJson('/webhook/wmf/yellowbeared', [
+        [
+            'id' => 'validation-event-123',
+            'eventType' => 'Microsoft.EventGrid.SubscriptionValidationEvent',
+            'data' => [
+                'validationCode' => 'test-validation-code-123'
+            ]
+        ]
+    ], [
+        'aeg-event-type' => 'SubscriptionValidation',
+        'aeg-subscription-name' => 'wmf-telemetry-subscription'
+    ]);
+
+    // Should return validation response
+    $response->assertStatus(200);
+    $response->assertJson([
+        'validationResponse' => 'test-validation-code-123'
+    ]);
+});
+
+it('verifies tenant forwarding urls use dynamic environment variables', function () {
+    // Test that tenant forwarding URLs use environment variables
+    $tenantConfig = config('machinehub.suppliers.wmf.tenants.yellowbeared');
+
+    // Should have webhook_url configured (will be null in test env since env vars not set)
+    expect($tenantConfig)->toHaveKey('webhook_url');
+    expect($tenantConfig['webhook_url'])->toBeNull(); // No env var set in test
+
+    // Test that we can get tenant config through TenantResolver
+    $resolvedConfig = \App\Tenants\TenantResolver::getTenantConfig('wmf', 'yellowbeared');
+    expect($resolvedConfig)->not->toBeNull();
+
+    // Test that TenantForwarder can get configured tenants
+    $forwarder = new TenantForwarder();
+    $configuredTenants = $forwarder->getConfiguredTenants('wmf');
+
+    expect($configuredTenants)->toContain('yellowbeared');
+    expect($configuredTenants)->toContain('yellowrock');
+    expect($configuredTenants)->toContain('hermelin');
+});
+
+it('logs warning when tenant webhook url is not configured', function () {
+    // Clear logs
+    Log::getLogger()->getHandlers()[0]->clear();
+
+    // Create a test DTO
+    $dto = new TelemetryDTO(
+        type: 'TestEvent',
+        eventId: 'test-123',
+        deviceId: 'device-456',
+        occurredAt: now(),
+        payload: ['test' => 'data']
+    );
+
+    // Test forwarding to tenant without webhook URL configured
+    $forwarder = new TenantForwarder();
+    $result = $forwarder->forwardToTenant($dto, 'wmf', 'yellowbeared');
+
+    // Should return false since no webhook URL is configured
+    expect($result)->toBeFalse();
+
+    // Check that warning was logged with payload
+    $logContent = file_get_contents(storage_path('logs/laravel.log'));
+    expect($logContent)->toContain('[TenantForwarder] No webhook URL configured for tenant - logging payload that would be sent');
+    expect($logContent)->toContain('YELLOWBEARED_WEBHOOK_URL environment variable');
+    expect($logContent)->toContain('"payload"'); // Should contain the actual payload
 });

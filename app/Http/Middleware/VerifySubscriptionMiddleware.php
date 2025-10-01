@@ -18,18 +18,49 @@ class VerifySubscriptionMiddleware
     {
         $supplier = strtolower($request->route('supplier'));
 
+        // Get subscription name from header (Azure Event Grid uses aeg-subscription-name)
         $incomingName = $request->header('aeg-subscription-name');
-        $expectedName = config("machinehub.suppliers.$supplier.subscription_name");
+        $expectedName = config("machinehub.suppliers.$supplier.options.subscription_name");
 
-        if (!$expectedName || $incomingName !== $expectedName) {
-            Log::warning("[Webhook] Invalid subscription name", [
+        Log::info("[VerifySubscriptionMiddleware] Checking subscription", [
+            'supplier' => $supplier,
+            'incoming' => $incomingName,
+            'expected' => $expectedName,
+            'ip' => $request->ip(),
+        ]);
+
+        // If no subscription name is configured, skip validation
+        if (!$expectedName) {
+            Log::warning("[VerifySubscriptionMiddleware] No subscription name configured for supplier", [
+                'supplier' => $supplier
+            ]);
+            return $next($request);
+        }
+
+        // If no incoming subscription name, reject
+        if (!$incomingName) {
+            Log::warning("[VerifySubscriptionMiddleware] Missing subscription name header", [
+                'supplier' => $supplier,
+                'headers' => $request->headers->all()
+            ]);
+            return response()->json(['error' => 'Missing subscription name'], 403);
+        }
+
+        // Check if subscription name matches
+        if ($incomingName !== $expectedName) {
+            Log::warning("[VerifySubscriptionMiddleware] Invalid subscription name", [
                 'supplier' => $supplier,
                 'incoming' => $incomingName,
                 'expected' => $expectedName,
-                'ip'       => $request->ip(),
+                'ip' => $request->ip(),
             ]);
             return response()->json(['error' => 'Invalid subscription name'], 403);
         }
+
+        Log::info("[VerifySubscriptionMiddleware] Subscription validation successful", [
+            'supplier' => $supplier,
+            'subscription' => $incomingName
+        ]);
 
         return $next($request);
     }

@@ -26,10 +26,18 @@ class TenantForwarder
         $webhookUrl = $tenantConfig['webhook_url'] ?? null;
         
         if (!$webhookUrl) {
-            Log::error("[TenantForwarder] No webhook URL configured for tenant", [
+            $payload = [
                 'supplier' => $supplier,
                 'tenant' => $tenant,
-                'config' => $tenantConfig
+                'event' => $dto->toArray(),
+                'timestamp' => now()->toISOString(),
+            ];
+            
+            Log::warning("[TenantForwarder] No webhook URL configured for tenant - logging payload that would be sent", [
+                'supplier' => $supplier,
+                'tenant' => $tenant,
+                'payload' => $payload,
+                'message' => "Please set {$tenant}_WEBHOOK_URL environment variable to enable forwarding"
             ]);
             return false;
         }
