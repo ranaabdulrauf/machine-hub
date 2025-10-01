@@ -61,64 +61,36 @@ php artisan queue:work &
 php artisan schedule:work &
 ```
 
-### 2. Configure Your First Tenant
+## 👥 Adding Tenants
 
-Add to your `.env` file:
-
-```env
-YELLOWBEARED_WEBHOOK_URL=https://yellowbeared.dobby.com/webhook/telemetry
-YELLOWROCK_WEBHOOK_URL=https://yellowrock.dobby.com/webhook/telemetry
-HERMELIN_WEBHOOK_URL=https://hermelin.dobby.com/webhook/telemetry
-```
-
-### 3. Test the System
-
-```bash
-# Test WMF webhook
-curl -X POST http://localhost:8000/webhook/wmf/yellowbeared \
-  -H "Content-Type: application/json" \
-  -d '{"eventType": "Dispensing", "data": {"DeviceId": "test-device"}}'
-
-# Run tests
-php artisan test
-```
-
-## 👥 How to Create a New Tenant
-
-### Step 1: Add Environment Variable
-
-Add to your `.env` file:
+To add a new tenant, add their webhook URL to your `.env` file:
 
 ```env
 NEWTENANT_WEBHOOK_URL=https://newtenant.dobby.com/webhook/telemetry
-NEWTENANT_API_KEY=newtenant_api_key_123
 ```
 
-### Step 2: Update All Supplier Configs
-
-Add the tenant to each supplier in `config/machinehub.php`:
+Then update each supplier's config in `config/machinehub.php`:
 
 ```php
 'newtenant' => [
     'webhook_url' => env('NEWTENANT_WEBHOOK_URL', null),
-    'api_key' => env('NEWTENANT_API_KEY', null),
 ],
 ```
 
-### Step 3: Test
+## ⚡ Quick Commands
 
-```bash
-# Test with new tenant
-curl -X POST http://localhost:8000/webhook/wmf/newtenant \
-  -H "Content-Type: application/json" \
-  -d '{"eventType": "Dispensing", "data": {"DeviceId": "test-device"}}'
-```
+| Command                                             | Description             |
+| --------------------------------------------------- | ----------------------- |
+| `php artisan supplier:create {name} --mode=webhook` | Create webhook supplier |
+| `php artisan supplier:create {name} --mode=api`     | Create API supplier     |
+| `php artisan supplier:list`                         | List all suppliers      |
 
 ## 🔧 Supplier Commands
 
 ### Create New Supplier
 
 **Command:**
+
 ```bash
 php artisan supplier:create {name} [options]
 ```
@@ -195,6 +167,7 @@ Created adapter: app/Suppliers/DejongAdapter.php
 ### List All Suppliers
 
 **Command:**
+
 ```bash
 php artisan supplier:list
 ```
@@ -202,6 +175,7 @@ php artisan supplier:list
 **Description:** Lists all registered suppliers with their details
 
 **Result:**
+
 ```
 Registered Suppliers:
 
