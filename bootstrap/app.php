@@ -5,6 +5,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\VerifySubscriptionMiddleware;
+use App\Http\Middleware\ResolveTenant;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,14 +15,20 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
-            'coffee-machine/*/webhook',
+            'webhook/*',
+            'api/poll/*',
         ]);
         $middleware->alias([
-            'verify.subscription' => VerifySubscriptionMiddleware::class
+            'verify.subscription' => VerifySubscriptionMiddleware::class,
+            'resolve.tenant' => ResolveTenant::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {
-        $schedule->job(new \App\Jobs\FetchDejongData)->everyFiveMinutes();
+        // Process all API suppliers every 5 minutes
+        $schedule->job(new \App\Jobs\ProcessAllApiSuppliersJob())->everyFiveMinutes();
+
+        // Forward all API suppliers telemetry every 2 minutes
+        $schedule->job(new \App\Jobs\ForwardAllApiSuppliersTelemetryJob())->everyTwoMinutes();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

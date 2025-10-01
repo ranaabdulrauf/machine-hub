@@ -1,6 +1,6 @@
 <?php
 
-namespace App\MachineHub\Core\DTO;
+namespace App\DTOs;
 
 class TelemetryDTO
 {

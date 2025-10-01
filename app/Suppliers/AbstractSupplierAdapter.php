@@ -1,12 +1,11 @@
 <?php
 
-namespace App\MachineHub\Suppliers;
+namespace App\Suppliers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use App\MachineHub\Core\DTO\TelemetryDTO;
-use App\MachineHub\Core\Contracts\SupplierAdapter;
+use App\DTOs\TelemetryDTO;
 
 abstract class AbstractSupplierAdapter
 {

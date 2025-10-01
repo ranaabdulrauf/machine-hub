@@ -1,20 +1,14 @@
 <?php
 
-namespace App\MachineHub\Suppliers;
+namespace App\Suppliers;
 
-use App\MachineHub\Core\Contracts\SupplierAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use App\MachineHub\Core\DTO\TelemetryDTO;
-use App\MachineHub\Suppliers\AbstractSupplierAdapter;
-use App\MachineHub\Core\Contracts\WebhookSupplierAdapter;
-use App\MachineHub\Core\Services\HubForwarder;
+use App\DTOs\TelemetryDTO;
 
 class WMFAdapter extends AbstractSupplierAdapter
 {
-    protected HubForwarder $forwarder;
-
     public function name(): string
     {
         return 'wmf';
@@ -44,7 +38,6 @@ class WMFAdapter extends AbstractSupplierAdapter
         return true;
     }
 
-
     public function handleEvent(array $event): ?TelemetryDTO
     {
         $type = $event['eventType'] ?? $event['event'] ?? null;
@@ -57,11 +50,7 @@ class WMFAdapter extends AbstractSupplierAdapter
         $method = 'handle' . str_replace(' ', '', ucwords(strtolower($type)));
 
         if (method_exists($this, $method)) {
-            $dto = $this->{$method}($event);
-
-            if ($dto) {
-                $this->forwarder->send($dto, $this->name());
-            }
+            return $this->{$method}($event);
         }
 
         return $this->handleUnknownEvent($event);

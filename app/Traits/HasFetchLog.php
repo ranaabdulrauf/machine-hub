@@ -1,6 +1,6 @@
 <?php
 
-namespace App\MachineHub\Core\Traits;
+namespace App\Traits;
 
 use Carbon\Carbon;
 use App\Models\SupplierFetchLog;

@@ -1,14 +1,14 @@
 <?php
 
-namespace App\MachineHub\Suppliers;
+namespace App\Suppliers;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
-use App\MachineHub\Core\DTO\TelemetryDTO;
-use App\MachineHub\Core\Traits\HasFetchLog;
+use App\DTOs\TelemetryDTO;
+use App\Traits\HasFetchLog;
 use App\Models\ProcessedTelemetry;
 
 class DejongAdapter extends AbstractSupplierAdapter
@@ -52,6 +52,7 @@ class DejongAdapter extends AbstractSupplierAdapter
                 ['supplier' => $this->name(), 'event_id' => $dto->eventId],
                 [
                     'type'        => $dto->type,
+                    'device_id'   => $dto->deviceId,
                     'occurred_at' => $dto->occurredAt,
                     'payload'     => $dto->payload,
                     'status'      => 'pending',
@@ -138,26 +139,5 @@ class DejongAdapter extends AbstractSupplierAdapter
         }
 
         return $results;
-    }
-
-    /**
-     * Forward a DTO to our common webhook URL.
-     */
-    protected function forwardToWebhook(TelemetryDTO $dto): void
-    {
-        $url = config('machinehub.webhook_url'); // put your URL in config
-
-        try {
-            Http::post($url, [
-                'supplier' => $this->name(),
-                'event'    => $dto->toArray(),
-            ]);
-            Log::info("[DejongAdapter] Forwarded DTO to webhook", ['eventId' => $dto->eventId]);
-        } catch (\Throwable $e) {
-            Log::error("[DejongAdapter] Failed to forward DTO", [
-                'eventId' => $dto->eventId,
-                'error'   => $e->getMessage(),
-            ]);
-        }
     }
 }
