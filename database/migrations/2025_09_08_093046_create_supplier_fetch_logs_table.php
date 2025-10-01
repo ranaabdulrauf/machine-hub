@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('supplier', 50);
             $table->string('endpoint', 50); // e.g. "consumptions", "events"
-            $table->string('status', 50); // e.g. "consumptions", "events"
+            $table->string('status', 50)->default('success'); // e.g. "success", "failed"
             $table->integer('page')->nullable();
             $table->integer('count')->nullable();
             $table->timestamp('last_fetched_at')->nullable();

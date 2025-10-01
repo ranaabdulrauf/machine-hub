@@ -14,7 +14,7 @@ class FetchApiSupplierDataJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected string $supplier;
+    public string $supplier;
 
     public function __construct(string $supplier)
     {

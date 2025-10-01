@@ -23,7 +23,7 @@ class SupplierFetchLog extends Model
     {
         static::updateOrCreate(
             ['supplier' => $supplier, 'endpoint' => $endpoint],
-            ['last_fetched_at' => $timestamp]
+            ['last_fetched_at' => $timestamp, 'status' => 'success']
         );
     }
 }

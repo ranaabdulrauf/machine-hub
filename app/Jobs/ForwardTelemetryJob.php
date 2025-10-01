@@ -15,9 +15,9 @@ class ForwardTelemetryJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected string $supplier;
-    protected string $tenant;
-    protected TelemetryDTO $dto;
+    public string $supplier;
+    public string $tenant;
+    public TelemetryDTO $dto;
     protected int $maxTries = 3;
     protected int $timeout = 30;
 

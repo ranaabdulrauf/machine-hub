@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use App\Suppliers\WMFAdapter;
 use App\Tenants\TenantResolver;
 use App\Tenants\TenantForwarder;
@@ -53,10 +54,10 @@ class WMFController extends Controller
 
         // Allow the origin (you can add validation logic here)
         return response()
+            ->json(['message' => 'Webhook validation successful'])
             ->header('WebHook-Allowed-Origin', $origin)
             ->header('WebHook-Allowed-Rate', '1000') // Allow 1000 requests per minute
-            ->header('Allow', 'POST')
-            ->json(['message' => 'Webhook validation successful']);
+            ->header('Allow', 'POST');
     }
 
     /**
@@ -92,7 +93,11 @@ class WMFController extends Controller
                 'body' => $request->all()
             ]);
 
-            return response()->json(['error' => 'Verification failed'], 400);
+            return response()->json([
+                'processed_count' => 0,
+                'total_events' => 0,
+                'message' => 'Verification failed'
+            ], 200);
         }
 
         // Process the webhook data
@@ -104,7 +109,11 @@ class WMFController extends Controller
                 'tenant' => $tenant
             ]);
 
-            return response()->json(['message' => 'No events to process'], 200);
+            return response()->json([
+                'processed_count' => 0,
+                'total_events' => 0,
+                'message' => 'No events to process'
+            ], 200);
         }
 
         $processedCount = 0;

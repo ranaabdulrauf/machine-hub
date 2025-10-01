@@ -17,7 +17,7 @@ class ForwardApiSupplierTelemetryJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected string $supplier;
+    public string $supplier;
 
     public function __construct(string $supplier)
     {
@@ -80,7 +80,6 @@ class ForwardApiSupplierTelemetryJob implements ShouldQueue
                         'event_id' => $telemetry->event_id,
                         'tenants' => $tenants
                     ]);
-
                 } catch (\Throwable $e) {
                     $telemetry->update(['status' => 'error']);
 
@@ -97,7 +96,6 @@ class ForwardApiSupplierTelemetryJob implements ShouldQueue
                 'processed_count' => $processedCount,
                 'total_events' => $pendingTelemetries->count()
             ]);
-
         } catch (\Throwable $e) {
             Log::error("[ForwardApiSupplierTelemetryJob] Exception during telemetry forwarding", [
                 'supplier' => $this->supplier,

@@ -9,18 +9,19 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
-    // Clear any existing logs
-    Log::getLogger()->getHandlers()[0]->clear();
+    // Clear database to avoid duplicate key errors
+    ProcessedTelemetry::truncate();
+    SupplierFetchLog::truncate();
 });
 
 it('can discover api suppliers from registry', function () {
     // Get all API suppliers from registry
     $apiSuppliers = SupplierRegistry::getApiSuppliers();
-    
+
     // Should find Dejong as API supplier
     expect($apiSuppliers)->toContain('dejong');
     expect($apiSuppliers)->toBeArray();
-    
+
     // Verify Dejong is registered as API mode
     expect(SupplierRegistry::getMode('dejong'))->toBe('api');
 });
@@ -28,10 +29,14 @@ it('can discover api suppliers from registry', function () {
 it('can process all api suppliers job', function () {
     // Mock the queue to prevent actual job execution
     Queue::fake();
-    
+
     // Dispatch the job
     ProcessAllApiSuppliersJob::dispatch();
-    
+
+    // Process the job manually to trigger the dispatch
+    $job = new ProcessAllApiSuppliersJob();
+    $job->handle();
+
     // Assert that individual fetch jobs were dispatched
     Queue::assertPushed(\App\Jobs\FetchApiSupplierDataJob::class, function ($job) {
         return $job->supplier === 'dejong';
@@ -44,7 +49,6 @@ it('can fetch data from api suppliers', function () {
         'supplier' => 'dejong',
         'event_id' => 'test-event-123',
         'type' => 'TestEvent',
-        'device_id' => 'test-device-456',
         'occurred_at' => now(),
         'payload' => ['test' => 'data'],
         'status' => 'pending'
@@ -72,7 +76,6 @@ it('can forward telemetry from api suppliers', function () {
         'supplier' => 'dejong',
         'event_id' => 'test-event-1',
         'type' => 'TestEvent1',
-        'device_id' => 'test-device-1',
         'occurred_at' => now(),
         'payload' => ['test' => 'data1'],
         'status' => 'pending'
@@ -82,7 +85,6 @@ it('can forward telemetry from api suppliers', function () {
         'supplier' => 'dejong',
         'event_id' => 'test-event-2',
         'type' => 'TestEvent2',
-        'device_id' => 'test-device-2',
         'occurred_at' => now(),
         'payload' => ['test' => 'data2'],
         'status' => 'pending'
@@ -94,6 +96,10 @@ it('can forward telemetry from api suppliers', function () {
     // Dispatch the forwarding job
     ForwardAllApiSuppliersTelemetryJob::dispatch();
 
+    // Process the job manually to trigger the dispatch
+    $job = new ForwardAllApiSuppliersTelemetryJob();
+    $job->handle();
+
     // Assert that forwarding jobs were dispatched for each telemetry
     Queue::assertPushed(\App\Jobs\ForwardApiSupplierTelemetryJob::class, function ($job) {
         return $job->supplier === 'dejong';
@@ -104,7 +110,7 @@ it('handles api supplier fetch logs', function () {
     // Test the HasFetchLog trait functionality
     $supplier = 'dejong';
     $endpoint = 'test-endpoint';
-    
+
     // Create a fetch log entry
     SupplierFetchLog::create([
         'supplier' => $supplier,
@@ -127,10 +133,10 @@ it('handles api supplier fetch logs', function () {
 it('can handle multiple api suppliers', function () {
     // Test that the system can handle multiple API suppliers
     $apiSuppliers = SupplierRegistry::getApiSuppliers();
-    
+
     // Should have at least Dejong
     expect(count($apiSuppliers))->toBeGreaterThanOrEqual(1);
-    
+
     // Test processing each supplier
     foreach ($apiSuppliers as $supplier) {
         expect(SupplierRegistry::getMode($supplier))->toBe('api');
@@ -139,19 +145,18 @@ it('can handle multiple api suppliers', function () {
 });
 
 it('logs api supplier processing', function () {
-    // Clear logs
-    Log::getLogger()->getHandlers()[0]->clear();
-    
+    // Test logging functionality
+
     // Dispatch the job
     ProcessAllApiSuppliersJob::dispatch();
-    
+
     // Process the job
     $job = new ProcessAllApiSuppliersJob();
     $job->handle();
-    
+
     // Check that appropriate logs were written
     $logContent = file_get_contents(storage_path('logs/laravel.log'));
-    
+
     expect($logContent)->toContain('[ProcessAllApiSuppliersJob] Starting processing for all API suppliers');
     expect($logContent)->toContain('[ProcessAllApiSuppliersJob] Found API suppliers');
     expect($logContent)->toContain('dejong');
@@ -160,16 +165,16 @@ it('logs api supplier processing', function () {
 it('handles empty api suppliers gracefully', function () {
     // Test with no API suppliers (this would require mocking the registry)
     // For now, we'll test that the system handles the current state correctly
-    
+
     $apiSuppliers = SupplierRegistry::getApiSuppliers();
-    
+
     // Should not be empty since we have Dejong
     expect($apiSuppliers)->not->toBeEmpty();
-    
+
     // Test that the job can handle the current suppliers
     $job = new ProcessAllApiSuppliersJob();
     $job->handle();
-    
+
     // Should complete without errors
     expect(true)->toBeTrue();
 });
@@ -180,7 +185,6 @@ it('can retry failed api processing', function () {
         'supplier' => 'dejong',
         'event_id' => 'failed-event',
         'type' => 'FailedEvent',
-        'device_id' => 'failed-device',
         'occurred_at' => now(),
         'payload' => ['error' => 'test failure'],
         'status' => 'error'
@@ -197,7 +201,7 @@ it('can retry failed api processing', function () {
     $errorCount = ProcessedTelemetry::where('supplier', 'dejong')
         ->where('status', 'error')
         ->count();
-        
+
     expect($errorCount)->toBe(1);
 });
 
@@ -207,7 +211,6 @@ it('handles telemetry status updates', function () {
         'supplier' => 'dejong',
         'event_id' => 'status-test-event',
         'type' => 'StatusTestEvent',
-        'device_id' => 'status-test-device',
         'occurred_at' => now(),
         'payload' => ['test' => 'status update'],
         'status' => 'pending'
@@ -215,7 +218,7 @@ it('handles telemetry status updates', function () {
 
     // Update status to processing
     $telemetry->update(['status' => 'processing']);
-    
+
     $this->assertDatabaseHas('processed_telemetries', [
         'event_id' => 'status-test-event',
         'status' => 'processing'
@@ -223,7 +226,7 @@ it('handles telemetry status updates', function () {
 
     // Update status to forwarded
     $telemetry->update(['status' => 'forwarded']);
-    
+
     $this->assertDatabaseHas('processed_telemetries', [
         'event_id' => 'status-test-event',
         'status' => 'forwarded'
