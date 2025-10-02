@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('event_id');
             $table->string('type')->nullable();
             $table->timestamp('occurred_at')->nullable();
-            $table->json('payload'); 
-            $table->enum('status', ['pending', 'processing', 'forwarded', 'failed', 'error'])->default('pending');
+            $table->json('payload');
+            $table->string('status')->default('pending');
             $table->timestamp('forwarded_at')->nullable();
 
             $table->unique(['supplier', 'event_id']);

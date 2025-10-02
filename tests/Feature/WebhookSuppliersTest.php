@@ -12,6 +12,7 @@ use App\Models\ProcessedTelemetry;
 use App\Models\SupplierFetchLog;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 
 beforeEach(function () {
@@ -414,14 +415,214 @@ it('logs warning when tenant webhook url is not configured', function () {
 
     // Test forwarding to tenant without webhook URL configured
     $forwarder = new TenantForwarder();
-    $result = $forwarder->forwardToTenant($dto, 'wmf', 'yellowbeared');
 
-    // Should return false since no webhook URL is configured
-    expect($result)->toBeFalse();
+    // Should throw ValidationException since no webhook URL is configured
+    expect(function () use ($forwarder, $dto) {
+        $forwarder->forwardToTenant($dto, 'wmf', 'yellowbeared');
+    })->toThrow(\Illuminate\Validation\ValidationException::class);
 
-    // Check that warning was logged with payload
+    // Check that error was logged with payload
     $logContent = file_get_contents(storage_path('logs/laravel.log'));
-    expect($logContent)->toContain('[TenantForwarder] No webhook URL configured for tenant - logging payload that would be sent');
+    expect($logContent)->toContain('[TenantForwarder] Configuration error - no webhook URL configured');
     expect($logContent)->toContain('yellowbeared_WEBHOOK_URL environment variable');
     expect($logContent)->toContain('"payload"'); // Should contain the actual payload
+});
+
+it('handles development mode by logging data without forwarding', function () {
+    // Ensure we're in development mode
+    app()->detectEnvironment(function () {
+        return 'local';
+    });
+
+    // Create a test DTO
+    $dto = new TelemetryDTO(
+        type: 'TestEvent',
+        eventId: 'test-dev-123',
+        deviceId: 'device-456',
+        occurredAt: now(),
+        payload: ['test' => 'development data']
+    );
+
+    // Dispatch a forwarding job
+    $job = new ForwardTelemetryJob('wmf', 'yellowbeared', $dto);
+    $job->handle(app(TenantForwarder::class));
+
+    // Check that development mode logging occurred
+    $logContent = file_get_contents(storage_path('logs/laravel.log'));
+    expect($logContent)->toContain('[ForwardTelemetryJob] Development mode - logging telemetry data');
+    expect($logContent)->toContain('Job completed successfully in development mode - data logged for inspection');
+    expect($logContent)->toContain('"dto_data"');
+});
+
+it('handles production mode by failing when no endpoint configured', function () {
+    // Ensure we're in production mode
+    app()->detectEnvironment(function () {
+        return 'production';
+    });
+
+    // Create a test DTO
+    $dto = new TelemetryDTO(
+        type: 'TestEvent',
+        eventId: 'test-prod-123',
+        deviceId: 'device-456',
+        occurredAt: now(),
+        payload: ['test' => 'production data']
+    );
+
+    // Dispatch a forwarding job - should fail in production when no endpoint
+    $job = new ForwardTelemetryJob('wmf', 'yellowbeared', $dto);
+
+    expect(function () use ($job) {
+        $job->handle(app(TenantForwarder::class));
+    })->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    // Check that production mode error logging occurred
+    $logContent = file_get_contents(storage_path('logs/laravel.log'));
+    expect($logContent)->toContain('[ForwardTelemetryJob] Validation error - configuration or webhook issue');
+    expect($logContent)->toContain('Please configure yellowbeared_WEBHOOK_URL environment variable');
+});
+
+it('handles webhook validation errors in production', function () {
+    // Ensure we're in production mode
+    app()->detectEnvironment(function () {
+        return 'production';
+    });
+
+    // Mock HTTP client to return 400 error (validation error)
+    Http::fake([
+        '*' => Http::response('Invalid data format', 400)
+    ]);
+
+    // Create a test DTO
+    $dto = new TelemetryDTO(
+        type: 'TestEvent',
+        eventId: 'test-validation-123',
+        deviceId: 'device-456',
+        occurredAt: now(),
+        payload: ['test' => 'invalid data']
+    );
+
+    // Dispatch a forwarding job - should throw validation exception
+    $job = new ForwardTelemetryJob('wmf', 'yellowbeared', $dto);
+
+    expect(function () use ($job) {
+        $job->handle(app(TenantForwarder::class));
+    })->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    // Check that validation error logging occurred
+    $logContent = file_get_contents(storage_path('logs/laravel.log'));
+    expect($logContent)->toContain('[ForwardTelemetryJob] Validation error - webhook rejected data');
+    expect($logContent)->toContain('webhook_validation_error');
+});
+
+it('handles webhook server errors in production', function () {
+    // Ensure we're in production mode
+    app()->detectEnvironment(function () {
+        return 'production';
+    });
+
+    // Mock HTTP client to return 500 error (server error)
+    Http::fake([
+        '*' => Http::response('Internal Server Error', 500)
+    ]);
+
+    // Create a test DTO
+    $dto = new TelemetryDTO(
+        type: 'TestEvent',
+        eventId: 'test-server-error-123',
+        deviceId: 'device-456',
+        occurredAt: now(),
+        payload: ['test' => 'server error data']
+    );
+
+    // Dispatch a forwarding job - should throw HTTP client exception
+    $job = new ForwardTelemetryJob('wmf', 'yellowbeared', $dto);
+
+    expect(function () use ($job) {
+        $job->handle(app(TenantForwarder::class));
+    })->toThrow(\Illuminate\Http\Client\RequestException::class);
+
+    // Check that server error logging occurred
+    $logContent = file_get_contents(storage_path('logs/laravel.log'));
+    expect($logContent)->toContain('[ForwardTelemetryJob] HTTP client error during forwarding');
+    expect($logContent)->toContain('http_client_error');
+});
+
+it('demonstrates professional exception-based error handling', function () {
+    // This test demonstrates the professional approach:
+    // 1. TenantForwarder throws exceptions immediately when errors occur
+    // 2. ForwardTelemetryJob catches and handles specific exception types
+    // 3. No status code checking - exceptions are the contract
+
+    // Test configuration error (no endpoint)
+    $dto = new TelemetryDTO(
+        type: 'TestEvent',
+        eventId: 'test-professional-123',
+        deviceId: 'device-456',
+        occurredAt: now(),
+        payload: ['test' => 'professional approach']
+    );
+
+    $forwarder = new TenantForwarder();
+
+    // Should throw ValidationException immediately - no status checking needed
+    expect(function () use ($forwarder, $dto) {
+        $forwarder->forwardToTenant($dto, 'wmf', 'yellowbeared');
+    })->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    // This is the professional practice:
+    // - Fail fast with exceptions
+    // - Clear error contracts via @throws annotations
+    // - No magic return values to check
+    // - Exception handling is explicit and type-safe
+});
+
+it('demonstrates telemetry status tracking throughout job lifecycle', function () {
+    // Create a test telemetry record
+    $telemetry = ProcessedTelemetry::create([
+        'supplier' => 'wmf',
+        'event_id' => 'test-status-tracking-123',
+        'type' => 'TestEvent',
+        'occurred_at' => now(),
+        'payload' => ['test' => 'status tracking'],
+        'status' => \App\Enums\TelemetryStatus::PENDING
+    ]);
+
+    // Test status helper methods
+    expect($telemetry->hasStatus(\App\Enums\TelemetryStatus::PENDING))->toBeTrue();
+    expect($telemetry->isCompleted())->toBeFalse();
+    expect($telemetry->isSuccessful())->toBeFalse();
+    expect($telemetry->hasFailed())->toBeFalse();
+
+    // Test status transitions
+    $telemetry->markAsProcessing();
+    expect($telemetry->hasStatus(\App\Enums\TelemetryStatus::PROCESSING))->toBeTrue();
+    expect($telemetry->isCompleted())->toBeFalse();
+
+    $telemetry->markAsForwarded();
+    expect($telemetry->hasStatus(\App\Enums\TelemetryStatus::FORWARDED))->toBeTrue();
+    expect($telemetry->isCompleted())->toBeTrue();
+    expect($telemetry->isSuccessful())->toBeTrue();
+    expect($telemetry->hasFailed())->toBeFalse();
+    expect($telemetry->forwarded_at)->not->toBeNull();
+
+    // Test failure status (permanent - no retry)
+    $telemetry->markAsFailed('Configuration error - missing webhook URL');
+    expect($telemetry->hasStatus(\App\Enums\TelemetryStatus::FAILED))->toBeTrue();
+    expect($telemetry->isCompleted())->toBeTrue();
+    expect($telemetry->isSuccessful())->toBeFalse();
+    expect($telemetry->hasFailed())->toBeTrue();
+    expect($telemetry->status->isPermanent())->toBeTrue();
+    expect($telemetry->status->shouldRetry())->toBeFalse();
+
+    // Test error status (temporary - will retry)
+    $telemetry->markAsError('Network timeout - server unreachable');
+    expect($telemetry->hasStatus(\App\Enums\TelemetryStatus::ERROR))->toBeTrue();
+    expect($telemetry->isCompleted())->toBeTrue();
+    expect($telemetry->hasFailed())->toBeTrue();
+    expect($telemetry->status->isPermanent())->toBeFalse();
+    expect($telemetry->status->shouldRetry())->toBeTrue();
+
+    // Test status label
+    expect($telemetry->status_label)->toBe('Error');
 });

@@ -72,7 +72,7 @@ class ForwardApiSupplierTelemetryJob implements ShouldQueue
                     }
 
                     // Mark as processing (will be updated by the ForwardTelemetryJob)
-                    $telemetry->update(['status' => 'processing']);
+                    $telemetry->markAsProcessing();
                     $processedCount++;
 
                     Log::info("[ForwardApiSupplierTelemetryJob] Dispatched forwarding jobs", [
@@ -81,7 +81,7 @@ class ForwardApiSupplierTelemetryJob implements ShouldQueue
                         'tenants' => $tenants
                     ]);
                 } catch (\Throwable $e) {
-                    $telemetry->update(['status' => 'error']);
+                    $telemetry->markAsError("Error processing telemetry: " . $e->getMessage());
 
                     Log::error("[ForwardApiSupplierTelemetryJob] Error processing telemetry", [
                         'supplier' => $this->supplier,
